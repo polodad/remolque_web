@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remolque Hidráulico 3D | Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; background: #080808; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow: hidden; }
+        
+        /* Top Header */
+        .header { position: absolute; top: 30px; left: 30px; z-index: 10; display: flex; align-items: center; gap: 20px; }
+        .title-box { border-left: 5px solid #eab308; padding-left: 15px; }
+        .title-box h1 { margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #f8fafc; }
+        .title-box p { color: #94a3b8; margin: 2px 0 0 0; font-size: 14px; }
+
+        /* Telemetry */
+        .telemetry-panel { position: absolute; bottom: 30px; left: 30px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 8px; border-left: 4px solid #ef4444; color: white; z-index: 10; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .telemetry-panel h3 { margin: 0 0 5px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .telemetry-panel .value { font-family: monospace; font-size: 24px; color: #eab308; font-weight: bold; margin: 0; }
+
+        /* Hydraulic Controls */
+        .hydraulic-controls { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: none; gap: 15px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); padding: 15px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 10; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-hydro { background: #eab308; border: none; padding: 12px 25px; color: #0f172a; font-weight: 800; cursor: pointer; border-radius: 6px; transition: 0.2s; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+        .btn-hydro:hover { background: #facc15; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3); }
+        .btn-hydro:active { transform: translateY(0); }
+        .btn-sec { background: #b91c1c; color: #fff; border: none; }
+        .btn-sec:hover { background: #dc2626; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
+
+        /* Configuration Panel Scrollable */
+        .config-container { position: absolute; top: 30px; right: 30px; bottom: 30px; width: 340px; overflow-y: auto; z-index: 10; padding-right: 10px; }
+        .config-container::-webkit-scrollbar { width: 6px; }
+        .config-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        .config-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 12px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 25px; }
+        .config-panel h2 { margin: 0 0 5px 0; font-size: 16px; font-weight: 800; color: #eab308; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .config-section h3 { margin: 0 0 12px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        
+        /* Option Cards */
+        .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .option-card { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .option-card:hover { background: #334155; border-color: #475569; }
+        .option-card.active { background: #0f172a; border-color: #eab308; box-shadow: 0 4px 6px rgba(234, 179, 8, 0.1); }
+        .option-card strong { display: block; font-size: 13px; color: #f8fafc; margin-bottom: 4px; }
+        .option-card span { font-size: 11px; color: #94a3b8; display: block; }
+
+        /* Color Picker */
+        .color-options { display: flex; gap: 12px; flex-wrap: wrap; }
+        .color-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #334155; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.3); position: relative; }
+        .color-btn:hover { transform: scale(1.1); }
+        .color-btn.active { border-color: #eab308; transform: scale(1.15); box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4); }
+        
+        .color-rojo { background-color: #991b1b; }
+        .color-negro { background-color: #111111; }
+        .color-azul { background-color: #1e3a8a; }
+        .color-plata { background-color: #64748b; }
+
+        .quote-btn { width: 100%; padding: 14px; background: #eab308; color: #0f172a; border: none; border-radius: 6px; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.3s; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .quote-btn:hover { background: #facc15; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3); }
+
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="title-box">
+        <h1>VOLTEK PRO</h1>
+        <p>Configurador 3D Industrial</p>
+    </div>
+</div>
+
+<!-- Config Panel -->
+<div class="config-container">
+    <div class="config-panel">
+        <div>
+            <h2>ESPECIFICACIONES</h2>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #94a3b8;">Configura tu equipo en tiempo real.</p>
+        </div>
+
+        <div class="config-section">
+            <h3>1. Tipo de Remolque</h3>
+            <div class="option-grid">
+                <div class="option-card active" id="type-volteo" onclick="changeType('volteo')">
+                    <strong>Volteo HD</strong>
+                    <span>Caja basculante</span>
+                </div>
+                <div class="option-card" id="type-plataforma" onclick="changeType('plataforma')">
+                    <strong>Plataforma</strong>
+                    <span>Plana sin bordes</span>
+                </div>
+                <div class="option-card" id="type-utilitario" onclick="changeType('utilitario')">
+                    <strong>Utilitario</strong>
+                    <span>Caja baja fija</span>
+                </div>
+                <div class="option-card" id="type-caballos" onclick="changeType('caballos')">
+                    <strong>Caballos</strong>
+                    <span>Cerrado c/techo</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h3>2. Capacidad y Ejes</h3>
+            <div class="option-grid">
+                <div class="option-card" id="cap-1" onclick="changeCapacity(1)">
+                    <strong>Ligero</strong>
+                    <span>1.5 T / 1 Eje</span>
+                </div>
+                <div class="option-card active" id="cap-2" onclick="changeCapacity(2)">
+                    <strong>Mediano</strong>
+                    <span>3 T / 2 Ejes</span>
+                </div>
+                <div class="option-card" id="cap-3" onclick="changeCapacity(3)">
+                    <strong>Pesado</strong>
+                    <span>6 T / 3 Ejes</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h3>3. Acabado del Piso</h3>
+            <div class="option-grid">
+                <div class="option-card" id="floor-madera" onclick="changeFloor('madera')">
+                    <strong>Madera</strong>
+                    <span>Tratada uso rudo</span>
+                </div>
+                <div class="option-card" id="floor-metal" onclick="changeFloor('metal')">
+                    <strong>Metal</strong>
+                    <span>Acero diamantado</span>
+                </div>
+                <div class="option-card active" id="floor-color" onclick="changeFloor('color')">
+                    <strong>Pintura</strong>
+                    <span>Acero liso pintado</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h3>4. Color de Pintura (PBR)</h3>
+            <div class="color-options">
+                <button class="color-btn color-rojo active" onclick="changeColor('rojo', this)" title="Rojo Voltek"></button>
+                <button class="color-btn color-negro" onclick="changeColor('negro', this)" title="Negro Acero"></button>
+                <button class="color-btn color-azul" onclick="changeColor('azul', this)" title="Azul Marino"></button>
+                <button class="color-btn color-plata" onclick="changeColor('plata', this)" title="Gris Plata"></button>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h3>5. Estilo de Rines</h3>
+            <div class="option-grid">
+                <div class="option-card active" id="rin-std" onclick="changeWheels('std')">
+                    <strong>Industrial</strong>
+                    <span>Acero Oscuro</span>
+                </div>
+                <div class="option-card" id="rin-chrome" onclick="changeWheels('chrome')">
+                    <strong>Premium</strong>
+                    <span>Cromado Brillante</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="quote-btn" onclick="alert('Configuración guardada. Funcionalidad de solicitud de cotización próximamente.')">
+            ✅ Solicitar Cotización
+        </button>
+    </div>
+</div>
+
+<!-- Telemetry -->
+<div class="telemetry-panel" id="telemetry-panel">
+    <h3>ÁNGULO</h3>
+    <p class="value" id="telemetry">0.0°</p>
+</div>
+
+<!-- Hydraulics -->
+<div class="controls hydraulic-controls" id="hydro-controls">
+    <button class="btn-hydro" onmousedown="move='up'" onmouseup="move=null" onmouseleave="move=null" ontouchstart="move='up'" ontouchend="move=null">
+        ELEVAR
+    </button>
+    <button class="btn-hydro btn-sec" onmousedown="move='down'" onmouseup="move=null" onmouseleave="move=null" ontouchstart="move='down'" ontouchend="move=null">
+        DESCENDER
+    </button>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+
+<script>
+    let scene, camera, renderer, controls, truck;
+    let trailerGroup, trailerBed, piston; 
+    let pmremGenerator;
+    
+    // State
+    let currentType = 'volteo'; 
+    let currentCap = 2; 
+    let currentFloor = 'color'; 
+    let currentRimChrome = false;
+    window.move = null;
+    let angle = 0;
+
+    // Materials (PBR based)
+    let bedMat, ironMat, floorMat;
+    let rimMats = [];
+
+    // Colores Realistas
+    const colors = {
+        truck: 0xd0d0d0,
+        trailerBed: { 'rojo': 0x7a1111, 'negro': 0x111111, 'azul': 0x112255, 'plata': 0x556677 },
+        chassis: { 'gris': 0x1a1a1a, 'negro': 0x050505 },
+        chrome: 0xffffff,
+        tire: 0x0a0a0a
+    };
+
+    // Texturas
+    const textureLoader = new THREE.TextureLoader();
+    let texWood, texMetal;
+
+    function init() {
+        // --- ESCENA DARK Y GRID ---
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x080808);
+        scene.fog = new THREE.Fog(0x080808, 15, 60);
+
+        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(22, 10, 28); 
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Realismo PBR
+        renderer.toneMappingExposure = 1.0;
+        document.body.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2.05; // Permitir ver casi a ras del piso
+        controls.target.set(0, 1, 0);
+
+        // --- ENTORNO DE REFLEJOS PBR ---
+        pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+        // Usamos RoomEnvironment para generar luces rebotando realistas
+        scene.environment = pmremGenerator.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+
+        // Iluminación Contrastante
+        scene.add(new THREE.AmbientLight(0xffffff, 0.1)); // Muy bajo para que el envMap haga el trabajo
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        mainLight.position.set(10, 15, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        mainLight.shadow.camera.far = 50;
+        mainLight.shadow.camera.left = -15;
+        mainLight.shadow.camera.right = 15;
+        mainLight.shadow.camera.top = 15;
+        mainLight.shadow.camera.bottom = -15;
+        scene.add(mainLight);
+
+        // Suelo Oscuro Reflectante y Grid (Estética de la captura)
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(100, 100),
+            new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.2, metalness: 0.6 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const grid = new THREE.GridHelper(100, 100, 0x333333, 0x1a1a1a);
+        grid.position.y = 0.01; // ligeramente sobre el piso
+        scene.add(grid);
+
+        // Inicializar Materiales Físicos Realistas
+        ironMat = new THREE.MeshStandardMaterial({ 
+            color: colors.chassis['gris'], 
+            metalness: 0.9, 
+            roughness: 0.6 
+        });
+        
+        // MeshPhysicalMaterial para la pintura de la caja (Capa transparente como autos reales)
+        bedMat = new THREE.MeshPhysicalMaterial({ 
+            color: colors.trailerBed['rojo'], 
+            metalness: 0.6, 
+            roughness: 0.4,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1
+        });
+        
+        floorMat = new THREE.MeshStandardMaterial({ color: colors.trailerBed['rojo'], metalness: 0.5, roughness: 0.5 });
+
+        // Cargar Texturas
+        texWood = textureLoader.load('assets/wood.png');
+        texWood.wrapS = THREE.RepeatWrapping; texWood.wrapT = THREE.RepeatWrapping; texWood.repeat.set(4, 1.5);
+        
+        texMetal = textureLoader.load('assets/metal.png');
+        texMetal.wrapS = THREE.RepeatWrapping; texMetal.wrapT = THREE.RepeatWrapping; texMetal.repeat.set(4, 1.5);
+
+        createPickup();
+        buildTrailer(); 
+        
+        updateFloorMaterial();
+        toggleHydroUI();
+        
+        animate();
+    }
+
+    function createWheel(width, radius, isChrome, saveMaterial = false) {
+        const group = new THREE.Group();
+        const tireMat = new THREE.MeshStandardMaterial({ color: colors.tire, roughness: 0.9 });
+        
+        const rimMat = new THREE.MeshStandardMaterial({ 
+            color: isChrome ? colors.chrome : 0x222222, 
+            metalness: isChrome ? 1.0 : 0.8, 
+            roughness: isChrome ? 0.1 : 0.5 
+        });
+
+        if (saveMaterial) rimMats.push(rimMat);
+
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, width, 32), tireMat);
+        tire.rotation.x = Math.PI / 2;
+        tire.castShadow = true;
+        group.add(tire);
+
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.7, radius * 0.7, width + 0.01, 16), rimMat);
+        rim.rotation.x = Math.PI / 2;
+        group.add(rim);
+
+        return group;
+    }
+
+    function createPickup() {
+        truck = new THREE.Group();
+        const paintMat = new THREE.MeshPhysicalMaterial({ color: colors.truck, metalness: 0.8, roughness: 0.3, clearcoat: 1.0 });
+        const plasticMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+        const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x050505, metalness: 0.9, roughness: 0.1, transmission: 0.5, transparent: true });
+        
+        const body = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.25, 2), paintMat);
+        body.position.y = 1.0;
+        body.castShadow = true;
+        truck.add(body);
+
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.85, 1.8), paintMat);
+        cabin.position.set(0.3, 1.9, 0);
+        cabin.castShadow = true;
+        truck.add(cabin);
+
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.65, 1.85), glassMat);
+        glass.position.set(0.4, 1.9, 0);
+        truck.add(glass);
+
+        const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 2.1), plasticMat);
+        bumper.position.set(-2.4, 0.8, 0);
+        truck.add(bumper);
+
+        const posW = [[-1.6, 0.5, 1.05], [-1.6, 0.5, -1.05], [1.6, 0.5, 1.05], [1.6, 0.5, -1.05]];
+        posW.forEach(p => {
+            const w = createWheel(0.4, 0.5, true, false);
+            w.position.set(...p);
+            truck.add(w);
+        });
+
+        truck.position.x = -6.5; 
+        scene.add(truck);
+    }
+
+    function buildTrailer() {
+        if (trailerGroup) {
+            scene.remove(trailerGroup);
+            rimMats = []; 
+            angle = 0; 
+        }
+
+        trailerGroup = new THREE.Group();
+        
+        // --- CHASIS BASE ---
+        const chassisThick = currentCap === 3 ? 0.25 : 0.15; 
+        const beamGeo = new THREE.BoxGeometry(7, 0.3, chassisThick);
+        const beamL = new THREE.Mesh(beamGeo, ironMat);
+        beamL.position.set(0, 0.8, 0.8);
+        beamL.castShadow = true;
+        const beamR = beamL.clone();
+        beamR.position.z = -0.8;
+        trailerGroup.add(beamL, beamR);
+
+        for(let i=0; i<3; i++) {
+            const cross = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 1.6), ironMat);
+            cross.position.set(-2 + i*2, 0.8, 0);
+            trailerGroup.add(cross);
+        }
+
+        const tongue = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.2, 0.4), ironMat);
+        tongue.position.set(-4.8, 0.8, 0);
+        trailerGroup.add(tongue);
+
+        // --- EJES / RUEDAS ---
+        let axles = [2.3]; 
+        if(currentCap === 2) axles = [1.8, 2.8]; 
+        if(currentCap === 3) axles = [1.3, 2.3, 3.3]; 
+
+        axles.forEach(x => {
+            [1, -1].forEach(z => {
+                const w = createWheel(0.35, 0.45, currentRimChrome, true);
+                w.position.set(x, 0.45, z);
+                trailerGroup.add(w);
+            });
+        });
+
+        // --- CAJA / CUERPO DEL REMOLQUE ---
+        trailerBed = new THREE.Group();
+        
+        if (currentType === 'volteo') {
+            trailerBed.position.set(3.3, 0.95, 0); 
+        } else {
+            trailerBed.position.set(0, 0, 0); 
+        }
+
+        const fL = 7, fW = 2.3, fT = 0.1; 
+        
+        // Piso
+        const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(fL, fT, fW), floorMat);
+        floorMesh.position.set(currentType==='volteo' ? -3.5 : 0, 1.0, 0); 
+        floorMesh.castShadow = true;
+        floorMesh.receiveShadow = true;
+        trailerBed.add(floorMesh);
+
+        // Paredes según el tipo
+        if (currentType === 'utilitario' || currentType === 'volteo' || currentType === 'caballos') {
+            const wallH = currentType === 'volteo' ? 1.2 : (currentType === 'caballos' ? 2.2 : 0.5);
+            const wallT = 0.1;
+            const pivotX = currentType==='volteo' ? -3.5 : 0;
+
+            const wL = new THREE.Mesh(new THREE.BoxGeometry(fL, wallH, wallT), bedMat);
+            wL.position.set(pivotX, 1.0 + wallH/2, fW/2 - wallT/2);
+            wL.castShadow = true;
+            
+            const wR = wL.clone();
+            wR.position.z = -fW/2 + wallT/2;
+            
+            const wF = new THREE.Mesh(new THREE.BoxGeometry(wallT, wallH, fW), bedMat);
+            wF.position.set(pivotX - fL/2 + wallT/2, 1.0 + wallH/2, 0);
+            wF.castShadow = true;
+
+            const wB = wF.clone();
+            wB.position.x = pivotX + fL/2 - wallT/2;
+
+            trailerBed.add(wL, wR, wF, wB);
+
+            // Techo cerrado para caballos
+            if(currentType === 'caballos') {
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(fL, 0.2, fW), bedMat);
+                roof.position.set(pivotX, 1.0 + wallH, 0);
+                roof.castShadow = true;
+                trailerBed.add(roof);
+            }
+            
+            // --- DETALLES REALISTAS: CINTAS REFLECTANTES AMARILLAS ---
+            const reflMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0x996600, roughness: 0.1 });
+            for(let i=0; i<4; i++) {
+                // Lateral izquierdo
+                const refl = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.02), reflMat);
+                refl.position.set(pivotX - 2.5 + (i*1.6), 1.0 + wallH/3, fW/2);
+                trailerBed.add(refl);
+                // Lateral derecho
+                const reflR = refl.clone();
+                reflR.position.z = -fW/2;
+                trailerBed.add(reflR);
+            }
+        }
+
+        trailerGroup.add(trailerBed);
+
+        // --- PISTON (Solo Volteo) ---
+        piston = new THREE.Group();
+        if (currentType === 'volteo') {
+            const cylinder = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.18, 1.2, 24), 
+                new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.9, roughness: 0.3})
+            );
+            piston.add(cylinder);
+            
+            const rod = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.1, 0.1, 1.2, 24), 
+                new THREE.MeshStandardMaterial({color: colors.chrome, metalness: 1, roughness: 0.05})
+            );
+            rod.position.y = 0.6;
+            piston.add(rod);
+
+            piston.position.set(-1.5, 1.0, 0);
+            trailerGroup.add(piston);
+        }
+
+        scene.add(trailerGroup);
+    }
+
+    // --- Funciones UI ---
+    
+    function changeType(type) {
+        currentType = type;
+        document.querySelectorAll("[id^='type-']").forEach(e => e.classList.remove('active'));
+        document.getElementById(`type-${type}`).classList.add('active');
+        buildTrailer();
+        toggleHydroUI();
+    }
+
+    function changeCapacity(cap) {
+        currentCap = cap;
+        document.querySelectorAll("[id^='cap-']").forEach(e => e.classList.remove('active'));
+        document.getElementById(`cap-${cap}`).classList.add('active');
+        buildTrailer(); 
+    }
+
+    function changeFloor(floorType) {
+        currentFloor = floorType;
+        document.querySelectorAll("[id^='floor-']").forEach(e => e.classList.remove('active'));
+        document.getElementById(`floor-${floorType}`).classList.add('active');
+        updateFloorMaterial();
+    }
+
+    function updateFloorMaterial() {
+        if(currentFloor === 'madera') {
+            floorMat.map = texWood;
+            floorMat.color.setHex(0xffffff); 
+            floorMat.roughness = 0.9;
+            floorMat.metalness = 0.0;
+        } else if(currentFloor === 'metal') {
+            floorMat.map = texMetal;
+            floorMat.color.setHex(0xaaaaaa);
+            floorMat.roughness = 0.4;
+            floorMat.metalness = 0.8;
+        } else {
+            floorMat.map = null;
+            const activeColorBtn = document.querySelector('.color-btn.active');
+            let colorKey = 'rojo';
+            if(activeColorBtn.classList.contains('color-negro')) colorKey = 'negro';
+            if(activeColorBtn.classList.contains('color-azul')) colorKey = 'azul';
+            if(activeColorBtn.classList.contains('color-plata')) colorKey = 'plata';
+            
+            floorMat.color.setHex(colors.trailerBed[colorKey]);
+            floorMat.roughness = 0.4;
+            floorMat.metalness = 0.6;
+        }
+        floorMat.needsUpdate = true;
+    }
+
+    function changeColor(colorKey, btnElement) {
+        const hex = colors.trailerBed[colorKey];
+        if(bedMat) bedMat.color.setHex(hex);
+        
+        if(currentFloor === 'color') {
+            floorMat.color.setHex(hex);
+        }
+
+        document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    function changeWheels(type) {
+        currentRimChrome = (type === 'chrome');
+        rimMats.forEach(mat => {
+            mat.color.setHex(currentRimChrome ? colors.chrome : 0x222222);
+            mat.metalness = currentRimChrome ? 1.0 : 0.8;
+            mat.roughness = currentRimChrome ? 0.05 : 0.4;
+        });
+
+        document.getElementById('rin-std').classList.remove('active');
+        document.getElementById('rin-chrome').classList.remove('active');
+        document.getElementById(`rin-${type}`).classList.add('active');
+    }
+
+    function toggleHydroUI() {
+        const hydroCtrl = document.getElementById('hydro-controls');
+        const teleCtrl = document.getElementById('telemetry-panel');
+        if(currentType === 'volteo') {
+            hydroCtrl.style.display = 'flex';
+            teleCtrl.style.display = 'block';
+        } else {
+            hydroCtrl.style.display = 'none';
+            teleCtrl.style.display = 'none';
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        if(currentType === 'volteo') {
+            if(move === 'up' && angle < 0.8) angle += 0.005;
+            if(move === 'down' && angle > 0) angle -= 0.008;
+
+            trailerBed.rotation.z = -angle;
+            
+            const extFactor = 1 + angle * 3.5;
+            piston.children[1].scale.y = extFactor;
+            piston.children[1].position.y = 0.6 * extFactor; 
+            piston.position.y = 1.0 + (angle * 1.5);
+            piston.rotation.z = -angle * 0.65;
+
+            document.getElementById('telemetry').innerText = (angle * 57.3).toFixed(1) + "°";
+        }
+        
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    init();
+</script>
+</body>
+</html>
